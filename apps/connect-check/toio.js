@@ -482,8 +482,11 @@ class ToioManager {
       throw new Error('Web Bluetooth is not supported in this browser.');
 
     const id = (cubeId || '').trim();
+    // 名前形式はファームで異なる: "toio Core Cube-954" / "toio-954" 両対応（OR条件）
     const filters = id
-      ? [{ namePrefix: `toio Core Cube-${id}` }]
+      ? [{ namePrefix: `toio Core Cube-${id}` },
+         { namePrefix: `toio-${id}` },
+         { name: id }]
       : [{ services: [TOIO_SERVICE] }];
     const device = await navigator.bluetooth.requestDevice({
       filters,
