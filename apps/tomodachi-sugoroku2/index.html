@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ともだちすごろく2</title>
+<style>
+  :root { --bg: #FDF6EC; --ink: #4A3F35; --accent: #F0598A; --accent2: #59C1E8; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
+    background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; align-items: center; padding: 12px;
+  }
+  header { width: 100%; max-width: 980px; display: flex; align-items: center;
+           gap: 8px; flex-wrap: wrap; padding: 6px 4px; }
+  h1 { font-size: 21px; }
+  h1 .sub { font-size: 12px; color: #9A8C7E; font-weight: normal; margin-left: 6px; }
+  .btn { border: none; border-radius: 999px; padding: 10px 16px; font-size: 14px; font-family: inherit;
+         cursor: pointer; color: #fff; background: var(--accent2); box-shadow: 0 2px 0 rgba(0,0,0,.12); }
+  .btn:active { transform: translateY(2px); box-shadow: none; }
+  .btn.pink { background: var(--accent); }
+  .btn.gold { background: #F5A623; }
+  .btn.ghost { background: #C9BBAA; }
+  .btn.connected { background: #34C77B; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .idbox { width: 48px; font-family: Menlo, monospace; font-size: 14px; text-align: center;
+           border: 2px solid #E8D9C0; border-radius: 8px; padding: 8px 2px; }
+  #stage-wrap { margin-top: 6px; background: #fff; border-radius: 20px;
+                box-shadow: 0 6px 24px rgba(74,63,53,.10); padding: 10px; }
+  footer { margin-top: 8px; font-size: 12px; color: #9A8C7E; text-align: center; line-height: 1.7; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🎲 ともだちすごろく2<span class="sub">合流ゲートで待ちあわせ、ハート3つでクリア</span></h1>
+    <span style="flex:1"></span>
+    <input id="id-you" class="idbox" value="954">
+    <button id="btn-you" class="btn">①あなた接続</button>
+    <input id="id-friend" class="idbox" value="h4i">
+    <button id="btn-friend" class="btn pink">②とも接続</button>
+    <button id="btn-start" class="btn gold">▶ はじめる</button>
+    <button id="btn-dice" class="btn gold" disabled>🎲 サイコロ</button>
+    <button id="btn-placed" class="btn ghost" style="display:none">おけたよ！</button>
+  </header>
+  <div id="stage-wrap"></div>
+  <footer>
+    競争じゃなくて<b>協力すごろく</b>！ 🔒の合流ゲートは<b>二人が揃うまで通れない</b>。先に着いたら応援サイコロで相手を進めよう。<br>
+    合流するたび友情ハート💗ゲット。<b>ハート3つ＋ふたりでゴール</b>したらクリア！ 実機なしでもOK（クリックでコマを置く・操作の代わりになる）。
+  </footer>
+  <script src="p5.min.js"></script>
+  <script src="toio.js"></script>
+  <script src="tts.js"></script>
+  <script src="sketch.js"></script>
+</body>
+</html>
