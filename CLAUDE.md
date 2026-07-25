@@ -59,6 +59,9 @@ python3 -m http.server 8080   # リポジトリルートで
 - **toio.js の `position.angle` は 0°=北(画面上)**（BLE生値 0°=東 に +90 済み）。
   math系の計算をするときは `(angle - 90) * π/180` で 0=+X のラジアンへ変換する。
 - キューブのBLE接続は同時に1本だけ。**他のタブ/アプリが掴んでいると選択一覧に出ない**。
+- **toio単体は音声合成（PCM再生）不可**。喋らせたい時は PC側の Web Speech API
+  (`SpeechSynthesisUtterance`, lang=ja-JP, pitch高め) ＋ キューブ側は高速ランダム音符の
+  「ピヨピヨ語」チャープ（tomodachi-toio の speak()/chirp() 参照）。
 
 ## デプロイ
 

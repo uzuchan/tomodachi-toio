@@ -219,6 +219,27 @@ function say(key) {
   const arr = BUBBLES[key]; if (!arr) return;
   emo.bubble = arr[Math.floor(Math.random() * arr.length)];
   emo.bubbleUntil = millis() + 2600;
+  speak(emo.bubble);          // PC音声（Web Speech API）
+  chirp(emo.bubble.length);   // キューブ側ピヨピヨ語
+}
+
+// toio単体は音声合成不可（MIDIのみ）→ PCの音声合成で喋り、キューブはピヨピヨ鳴く
+function speak(text) {
+  const box = document.getElementById('chk-voice');
+  if (!box?.checked || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text.replace(/[♡♥…！？]/g, ''));
+  u.lang = 'ja-JP'; u.pitch = 1.8; u.rate = 1.15;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+function chirp(len) {
+  const n = Math.min(8, Math.max(3, Math.round(len / 2)));
+  const notes = [];
+  for (let i = 0; i < n; i++) notes.push([55, 96 + Math.floor(Math.random() * 10), 170]);
+  if (friend.mode === 'ble') friend.cube.playMelody(notes).catch(() => {});
+  else notes.forEach((nn, i) =>
+    setTimeout(() => beep(440 * Math.pow(2, (nn[1] - 69) / 12), 50), i * 60));
 }
 function updateBubbleLife(now) { if (now > emo.bubbleUntil) emo.bubble = ''; }
 

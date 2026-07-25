@@ -73,7 +73,11 @@
       <tr><td>バッテリー</td><td class="val" id="v-batt">—</td></tr>
       <tr><td>位置 (マット上)</td><td class="val" id="v-pos">マットに置いてね</td></tr>
       <tr><td>ボタン</td><td class="val" id="v-btn">—</td></tr>
-      <tr><td>姿勢</td><td class="val" id="v-att">—</td></tr>
+      <tr><td>姿勢角 (オイラー)</td><td class="val" id="v-att">—</td></tr>
+      <tr><td>向き・水平</td><td class="val" id="v-flat">—</td></tr>
+      <tr><td>衝突</td><td class="val" id="v-col">まだ（コンコンとぶつけてみて）</td></tr>
+      <tr><td>ダブルタップ</td><td class="val" id="v-tap">まだ（トントンと2回叩いてみて）</td></tr>
+      <tr><td>シェイク</td><td class="val" id="v-shake">まだ（持って振ってみて）</td></tr>
     </table>
     <div class="row">
       <button class="btn mini" onclick="led(255,0,0)">LED赤</button>
@@ -177,6 +181,17 @@ $('btn-connect').onclick = async () => {
     cube.on('matMissed', () => { $('v-pos').textContent = 'マットの外（持ち上げ中？）'; });
     cube.on('button', b => { $('v-btn').textContent = b ? '押されてる！' : '離した'; });
     cube.on('attitude', a => { $('v-att').textContent = `roll=${a.roll} pitch=${a.pitch} yaw=${a.yaw}`; });
+
+    // ── モーションセンサー ──
+    const POSTURE = { 1: '上向き（そのまま）', 2: 'さかさま', 3: 'うしろに倒れてる',
+                      4: 'まえに倒れてる', 5: '右に倒れてる', 6: '左に倒れてる' };
+    let colN = 0, tapN = 0;
+    cube.on('motion', m => {
+      $('v-flat').textContent = `${m.horizontal ? '水平 ✓' : '傾いてる！'} ／ ${POSTURE[m.posture] || '?'}`;
+      if (m.collision) { colN++; $('v-col').textContent = `${colN}回 検出！`; log('💥 衝突を検出', 's'); }
+      if (m.doubleTap) { tapN++; $('v-tap').textContent = `${tapN}回 検出！`; log('👆 ダブルタップを検出', 's'); }
+      if (m.shake)     { $('v-shake').textContent = `レベル${m.shake} でシェイク中！`; }
+    });
     cube.on('disconnect', () => {
       log('切断されました', 'e');
       resetUI();
