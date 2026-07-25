@@ -57,6 +57,7 @@ class ToioDevice {
     // moveTo completion tracking — rotating 8-bit control ID per command
     this._moveCtrlId   = 0;
     this._moveResolvers = {};   // ctrlId (number) → resolveFn
+    this._melodySeq    = 0;     // playMelody の中断トークン
   }
 
   /* ── Connect ─────────────────────────────────────────────────────────────── */
@@ -425,7 +426,33 @@ class ToioDevice {
     await _toioSleep(EFFECT_DURATIONS[id] ?? 350);
   }
 
+  /**
+   * MIDIメロディの一括再生。notes = [[durationMs, noteNo, volume?], ...]
+   * noteNo 128 = 休符。1回のBLE書き込みに最大59音（超過分は自動分割して順次送信）。
+   * 演奏タイミングはキューブのファームウェアが刻むのでJS側のジッタが乗らない。
+   * repeat: 曲全体の繰り返し回数。stopSound() で中断できる。
+   */
+  async playMelody(notes, repeat = 1) {
+    const seq = ++this._melodySeq;
+    for (let r = 0; r < repeat; r++) {
+      for (let i = 0; i < notes.length; i += 59) {
+        if (seq !== this._melodySeq) return;           // stopSound() された
+        const chunk = notes.slice(i, i + 59);
+        const bytes = [0x03, 0x01, chunk.length];
+        let totalMs = 0;
+        for (const [ms, note, vol] of chunk) {
+          const d = Math.min(255, Math.max(1, Math.round(ms / 10)));
+          bytes.push(d, Math.min(128, Math.max(0, note)), vol == null ? 255 : vol);
+          totalMs += d * 10;
+        }
+        await this._chars.sound.writeValue(new Uint8Array(bytes));
+        await _toioSleep(totalMs + 20);
+      }
+    }
+  }
+
   async stopSound() {
+    this._melodySeq = (this._melodySeq || 0) + 1;   // playMelody のループを止める
     const cmd = new Uint8Array([0x01]);
     await this._chars.sound.writeValue(cmd);
   }

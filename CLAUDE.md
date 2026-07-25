@@ -10,6 +10,7 @@ index.html              … ホームページ（アプリランチャー）
 apps/
   connect-check/        … 実機との接続確認だけをする最小ツール（トラブルシュート用）
   tomodachi-toio/       … メイン作品。AIの"友"キューブが手動キューブになついていくゲーム
+  toio-concert/         … 1台用。MIDI一括送信で演奏(アイネクライネ等)+拍同期ダンス/LED。マット不要
     index.html          … UI（接続ボタン等はHTML側）
     sketch.js           … 感情エンジン + デジタルツイン描画 (p5.js)
     toio.js             … Web Bluetooth ライブラリ（下記参照）
@@ -42,6 +43,8 @@ python3 -m http.server 8080   # リポジトリルートで
 - `cube.move(l, r, ms)` 速度 -115..115。`ms=0` は書きっぱなし(即return)
 - `cube.moveTo(x, y, angle, speed)` キューブ内蔵の目標地点移動(0x83応答をawait)
 - `cube.setLED(r,g,b,ms)` / `cube.playSound(note,ms)` / `cube.playSoundEffect(id)`
+- `cube.playMelody([[ms,note,vol?],...], repeat)` メロディ一括再生（独自拡張）。
+  1書き込み59音まで自動分割。音符128=休符。タイミングはキューブ側で刻む。`stopSound()`で中断
 - イベント: `cube.on('position'|'button'|'motion'|'attitude'|'matMissed'|'disconnect', fn)`
   - `motion` は `{horizontal, collision, doubleTap, posture, shake}`（この拡張は独自）
 - コマンド系メソッドは完了まで await する設計。連続駆動ループでは

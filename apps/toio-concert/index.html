@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>toioコンサート</title>
+<style>
+  :root { --bg:#FDF6EC; --ink:#4A3F35; --accent:#8B6FD8; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif; background:var(--bg);
+         color:var(--ink); max-width:640px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { font-size:24px; margin-bottom:4px; }
+  .sub { color:#9A8C7E; font-size:13px; margin-bottom:18px; }
+  .sub a { color:#59A1E8; }
+  .card { background:#fff; border-radius:18px; padding:18px 20px; margin-bottom:14px;
+          box-shadow:0 4px 16px rgba(74,63,53,.08); }
+  .btn { border:none; border-radius:999px; padding:12px 20px; font-size:15px; font-family:inherit;
+         cursor:pointer; color:#fff; background:var(--accent); box-shadow:0 2px 0 rgba(0,0,0,.12); }
+  .btn:active { transform:translateY(2px); box-shadow:none; }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .btn.mini { padding:8px 14px; font-size:13px; background:#C9BBAA; }
+  .idbox { width:56px; font-family:Menlo,monospace; font-size:15px; text-align:center;
+           border:2px solid #E8D9C0; border-radius:8px; padding:8px 4px; }
+  .song { display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+          background:#F8F1E4; border:none; border-radius:14px; padding:14px 16px; margin-bottom:10px;
+          font-family:inherit; font-size:15px; cursor:pointer; color:var(--ink); transition:background .12s; }
+  .song:hover { background:#F1E5D0; }
+  .song.playing { background:#EDE4FB; outline:2px solid var(--accent); }
+  .song .emoji { font-size:24px; }
+  .song small { display:block; color:#9A8C7E; font-size:12px; margin-top:2px; }
+  .song:disabled { opacity:.45; cursor:default; }
+  label { font-size:14px; user-select:none; }
+  #status { font-size:13px; color:#9A8C7E; min-height:20px; margin-top:8px; }
+  #stage { text-align:center; font-size:64px; height:80px; line-height:80px; }
+  .spin { display:inline-block; animation:spin 1.2s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+  <h1>🎻 toioコンサート</h1>
+  <p class="sub">キューブ1台がオーケストラ。演奏に合わせてダンスもするよ ｜ <a href="../../index.html">← ホームへ</a></p>
+
+  <div class="card" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+    <input id="cube-id" class="idbox" value="954" title="キューブID（空で全toio表示）">
+    <button id="btn-connect" class="btn">toioを接続</button>
+    <label><input type="checkbox" id="chk-dance" checked> ダンスする（机の広い所で！）</label>
+    <div id="status">未接続。IDで絞り込めます（空欄=すべて表示）</div>
+  </div>
+
+  <div class="card">
+    <div id="stage">🤖</div>
+    <div id="songs"></div>
+    <button id="btn-stop" class="btn mini" disabled>■ 停止</button>
+  </div>
+
+<script src="toio.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let cube = null, playToken = 0;
+
+// ── 音名 → MIDIノート番号 ────────────────────────────────────
+const N = (() => {
+  const base = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  const map = {};
+  for (let oct = 3; oct <= 6; oct++) for (const [k, v] of Object.entries(base)) {
+    map[`${k}${oct}`]  = 12 * (oct + 1) + v;
+    map[`${k}#${oct}`] = 12 * (oct + 1) + v + 1;
+    map[`${k}b${oct}`] = 12 * (oct + 1) + v - 1;
+  }
+  map.R = 128;  // 休符
+  return map;
+})();
+
+// ── 曲データ: [音名, 拍数] / tempo=BPM / repeat=繰り返し ──────
+const SONGS = [
+  {
+    id: 'eine', emoji: '🎻', name: 'アイネ・クライネ・ナハトムジーク',
+    desc: 'モーツァルト K.525 — 冒頭の名フレーズ', tempo: 132, repeat: 2,
+    notes: [
+      // m1
+      ['G4',1],['R',.5],['D4',.5],['G4',1],['R',.5],['D4',.5],
+      // m2
+      ['G4',.5],['D4',.5],['G4',.5],['B4',.5],['D5',1],['R',1],
+      // m3
+      ['C5',1],['R',.5],['A4',.5],['C5',1],['R',.5],['A4',.5],
+      // m4
+      ['C5',.5],['A4',.5],['F#4',.5],['A4',.5],['D4',1],['R',1],
+    ],
+  },
+  {
+    id: 'twinkle', emoji: '⭐', name: 'きらきら星',
+    desc: 'モーツァルトつながりで（変奏曲の主題）', tempo: 108, repeat: 1,
+    notes: [
+      ['C5',1],['C5',1],['G5',1],['G5',1],['A5',1],['A5',1],['G5',2],
+      ['F5',1],['F5',1],['E5',1],['E5',1],['D5',1],['D5',1],['C5',2],
+      ['G5',1],['G5',1],['F5',1],['F5',1],['E5',1],['E5',1],['D5',2],
+      ['G5',1],['G5',1],['F5',1],['F5',1],['E5',1],['E5',1],['D5',2],
+      ['C5',1],['C5',1],['G5',1],['G5',1],['A5',1],['A5',1],['G5',2],
+      ['F5',1],['F5',1],['E5',1],['E5',1],['D5',1],['D5',1],['C5',2],
+    ],
+  },
+  {
+    id: 'frog', emoji: '🐸', name: 'かえるのうた',
+    desc: 'アンコール用の小品', tempo: 120, repeat: 1,
+    notes: [
+      ['C5',1],['D5',1],['E5',1],['F5',1],['E5',1],['D5',1],['C5',1],['R',1],
+      ['E5',1],['F5',1],['G5',1],['A5',1],['G5',1],['F5',1],['E5',1],['R',1],
+      ['C5',1],['R',1],['C5',1],['R',1],['C5',1],['R',1],['C5',1],['R',1],
+      ['C5',.5],['C5',.5],['D5',.5],['D5',.5],['E5',.5],['E5',.5],['F5',.5],['F5',.5],
+      ['E5',1],['D5',1],['C5',1],['R',1],
+    ],
+  },
+];
+
+// ── UI 構築 ──────────────────────────────────────────────────
+for (const s of SONGS) {
+  const b = document.createElement('button');
+  b.className = 'song'; b.id = `song-${s.id}`; b.disabled = true;
+  b.innerHTML = `<span class="emoji">${s.emoji}</span>
+    <span>${s.name}<small>${s.desc} ・ ${Math.round(songMs(s) / 1000)}秒</small></span>`;
+  b.onclick = () => play(s);
+  $('songs').appendChild(b);
+}
+
+function songMs(s) {
+  const beat = 60000 / s.tempo;
+  return s.notes.reduce((a, [, b]) => a + b * beat, 0) * s.repeat;
+}
+
+// ── 接続 ────────────────────────────────────────────────────
+$('btn-connect').onclick = async () => {
+  try {
+    $('status').textContent = '接続中…';
+    cube = await toioManager.addCube($('cube-id').value);
+    $('status').textContent = `✓ ${cube.name} と接続中。曲を選んでね`;
+    $('btn-connect').textContent = `✓ ${cube.name}`;
+    document.querySelectorAll('.song').forEach(b => b.disabled = false);
+    $('btn-stop').disabled = false;
+    cube.on('disconnect', () => {
+      cube = null; playToken++;
+      $('status').textContent = '切断されました。もう一度接続してください';
+      $('btn-connect').textContent = 'toioを接続';
+      document.querySelectorAll('.song').forEach(b => b.disabled = true);
+    });
+    await cube.setLED(140, 100, 255, 0);
+    await cube.playSoundEffect(0);
+  } catch (e) {
+    $('status').textContent = `接続できず: ${e.name}（電源・他タブの接続・IDを確認して再試行）`;
+  }
+};
+
+// ── 演奏 ────────────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function play(song) {
+  if (!cube) return;
+  const token = ++playToken;
+  document.querySelectorAll('.song').forEach(b => b.classList.remove('playing'));
+  $(`song-${song.id}`).classList.add('playing');
+  $('stage').innerHTML = '<span class="spin">🤖</span> 🎶';
+  $('status').textContent = `♪ ${song.name} を演奏中…`;
+
+  const beat = 60000 / song.tempo;
+  const notes = song.notes.map(([n, b]) => [b * beat, N[n]]);
+
+  // 演奏はキューブ内部のタイマーで進む。ダンスとLEDはJS側で並走。
+  const melody = cube.playMelody(notes, song.repeat).catch(() => {});
+  if ($('chk-dance').checked) danceLoop(token, beat, songMs(song));
+  else ledLoop(token, beat, songMs(song));
+
+  await melody;
+  if (token !== playToken) return;   // 停止・別曲に切り替わった
+  $(`song-${song.id}`).classList.remove('playing');
+  $('stage').textContent = '🤖✨';
+  $('status').textContent = `♪ ${song.name} — おしまい！`;
+  try { await cube.stop(); await cube.setLED(140, 100, 255, 0); } catch (e) {}
+}
+
+const BEAT_COLS = [[255,80,160],[80,180,255],[255,200,60],[120,255,140]];
+
+async function danceLoop(token, beat, totalMs) {
+  const t0 = performance.now();
+  let i = 0;
+  while (cube && token === playToken && performance.now() - t0 < totalMs) {
+    const [r, g, b] = BEAT_COLS[i % 4];
+    cube.setLED(r, g, b, 0).catch(() => {});
+    // その場スピン（左右交互）: l = -r なので位置はほぼ動かない
+    const dir = i % 2 === 0 ? 1 : -1;
+    const spd = i % 8 === 7 ? 60 : 32;          // 8拍目だけ大きくくるっ
+    cube.move(spd * dir, -spd * dir, 0).catch(() => {});
+    await sleep(beat);
+    i++;
+  }
+  if (cube) { cube.stop().catch(() => {}); }
+}
+
+async function ledLoop(token, beat, totalMs) {
+  const t0 = performance.now();
+  let i = 0;
+  while (cube && token === playToken && performance.now() - t0 < totalMs) {
+    const [r, g, b] = BEAT_COLS[i % 4];
+    cube.setLED(r, g, b, 0).catch(() => {});
+    await sleep(beat);
+    i++;
+  }
+}
+
+$('btn-stop').onclick = async () => {
+  playToken++;
+  document.querySelectorAll('.song').forEach(b => b.classList.remove('playing'));
+  $('stage').textContent = '🤖';
+  $('status').textContent = '停止しました';
+  if (cube) { try { await cube.stopSound(); await cube.stop(); } catch (e) {} }
+};
+</script>
+</body>
+</html>
