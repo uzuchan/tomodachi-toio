@@ -96,7 +96,8 @@ function resetGame() {
 // ══════════════════════════════════════════════════════════════════════════
 async function connectCube(role) {
   try {
-    const cube = await toioManager.addCube();
+    const idFilter = document.getElementById(role === 'you' ? 'id-you' : 'id-friend').value;
+    const cube = await toioManager.addCube(idFilter);
     if (role === 'you') {
       human.mode = 'ble'; human.cube = cube;
       document.getElementById('btn-you').classList.add('connected');

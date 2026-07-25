@@ -36,7 +36,9 @@ python3 -m http.server 8080   # リポジトリルートで
 配布されたデジタルツインビューワー同梱のライブラリを流用（+motion通知を拡張）。
 各アプリに**コピーして**自己完結させる方針（共有パス参照にしない）。
 
-- `toioManager.addCube()` → 選択ダイアログ→接続済み `ToioDevice` を返す
+- `toioManager.addCube(cubeId?)` → 選択ダイアログ→接続済み `ToioDevice` を返す。
+  `cubeId`（例 `"954"`）を渡すと `namePrefix: "toio Core Cube-954"` でダイアログを絞り込む
+  （会場に他人のtoioが大量にある対策）。空なら全toio表示。手持ちは 954 と h4i。
 - `cube.move(l, r, ms)` 速度 -115..115。`ms=0` は書きっぱなし(即return)
 - `cube.moveTo(x, y, angle, speed)` キューブ内蔵の目標地点移動(0x83応答をawait)
 - `cube.setLED(r,g,b,ms)` / `cube.playSound(note,ms)` / `cube.playSoundEffect(id)`

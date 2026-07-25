@@ -50,6 +50,17 @@
     <p style="font-size:13px; color:#9A8C7E; margin-bottom:12px">
       toioの電源を入れて（底のボタン長押し→起動音）、ボタンを押してください
     </p>
+    <div style="margin-bottom:14px; font-size:14px">
+      キューブID絞り込み:
+      <input id="cube-id" value="954" size="5" style="font-family:Menlo,monospace; font-size:15px;
+             text-align:center; border:2px solid #E8D9C0; border-radius:8px; padding:6px;">
+      <button class="btn mini" onclick="setId('954')">954</button>
+      <button class="btn mini" onclick="setId('h4i')">h4i</button>
+      <button class="btn mini" onclick="setId('')">すべて表示</button>
+      <div style="font-size:12px; color:#9A8C7E; margin-top:6px">
+        周りにtoioがたくさんある会場では、IDで絞ると自分のキューブだけがダイアログに出ます
+      </div>
+    </div>
     <button id="btn-connect" class="btn big">toioを接続する</button>
     <button id="btn-disconnect" class="btn mini" style="display:none">切断</button>
     <div class="hint" id="hint"></div>
@@ -135,18 +146,23 @@ const HINTS = {
   NotFoundError: `ダイアログにtoioが出ない・キャンセルした場合:<br>
     ・toioの電源が入っているか（起動音が鳴り、ランプ点灯）<br>
     ・<b>他のタブ / アプリ / スマホが接続中だと一覧に出ません</b>（ビューワーのタブを閉じる、toioアプリを終了、電源を入れ直す）<br>
+    ・<b>ID絞り込み中に出ない場合</b>: 古いファームはBLE名にIDが付きません。「すべて表示」で試して、電波強度と勘で選んでください<br>
     ・Macの システム設定 → プライバシーとセキュリティ → Bluetooth → Chrome を許可`,
   SecurityError: `このページを localhost か https で開き直してください（file:// は不可）`,
   NetworkError: `接続が途中で切れました。toioの電源を入れ直して、もう一度試してください`,
   default: `toioの電源を入れ直して再試行。ダメならChrome再起動 → Mac のBluetoothをOFF/ON`,
 };
 
+function setId(v) { $('cube-id').value = v; }
+
 $('btn-connect').onclick = async () => {
   $('hint').style.display = 'none';
   $('btn-connect').disabled = true;
   try {
-    log('デバイス選択ダイアログを開きます…');
-    cube = await toioManager.addCube();   // 中で requestDevice → GATT → 全キャラクタリスティック購読
+    const id = $('cube-id').value.trim();
+    log(id ? `"toio Core Cube-${id}" に絞り込んでダイアログを開きます…`
+           : 'すべてのtoioを対象にダイアログを開きます…');
+    cube = await toioManager.addCube(id);   // 中で requestDevice → GATT → 全キャラクタリスティック購読
     log(`接続成功: ${cube.name}`, 's');
     $('btn-connect').textContent = `✓ ${cube.name} と接続中`;
     $('btn-disconnect').style.display = 'inline-block';

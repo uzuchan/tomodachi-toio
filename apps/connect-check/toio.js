@@ -474,13 +474,19 @@ class ToioManager {
   get cubes() { return this._cubes; }
   get count()  { return this._cubes.length; }
 
-  /** Prompt BLE device picker and connect a new cube. */
-  async addCube() {
+  /** Prompt BLE device picker and connect a new cube.
+   *  cubeId (optional): 3桁ID (例 "954") — 会場に大量のtoioがある時、
+   *  選択ダイアログを "toio Core Cube-954" だけに絞り込む。空なら全toio表示。 */
+  async addCube(cubeId) {
     if (!navigator.bluetooth)
       throw new Error('Web Bluetooth is not supported in this browser.');
 
+    const id = (cubeId || '').trim();
+    const filters = id
+      ? [{ namePrefix: `toio Core Cube-${id}` }]
+      : [{ services: [TOIO_SERVICE] }];
     const device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [TOIO_SERVICE] }],
+      filters,
       optionalServices: [TOIO_SERVICE],
     });
 

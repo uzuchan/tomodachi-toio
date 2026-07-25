@@ -32,6 +32,11 @@
   .btn.ghost { background: #C9BBAA; }
   .btn.connected { background: #34C77B; }
   .btn:disabled { opacity: .5; cursor: default; }
+  .idbox {
+    width: 52px; font-family: Menlo, monospace; font-size: 14px; text-align: center;
+    border: 2px solid #E8D9C0; border-radius: 8px; padding: 8px 4px; background: #fff;
+  }
+  .pair { display: flex; align-items: center; gap: 4px; }
   #stage-wrap {
     margin-top: 8px; background: var(--panel); border-radius: 20px;
     box-shadow: 0 6px 24px rgba(74,63,53,.10); padding: 10px;
@@ -44,8 +49,14 @@
   <header>
     <h1>ともだちtoio<span class="sub">きみと友だちになりたい ― テーマ「友」</span></h1>
     <span style="flex:1"></span>
-    <button id="btn-you"    class="btn">① あなたのキューブを接続</button>
-    <button id="btn-friend" class="btn pink">② ともだちを接続</button>
+    <span class="pair">
+      <input id="id-you" class="idbox" value="954" title="キューブID（空で全toio表示）">
+      <button id="btn-you" class="btn">① あなたを接続</button>
+    </span>
+    <span class="pair">
+      <input id="id-friend" class="idbox" value="h4i" title="キューブID（空で全toio表示）">
+      <button id="btn-friend" class="btn pink">② ともだちを接続</button>
+    </span>
     <button id="btn-sim"    class="btn ghost">シミュレーションで遊ぶ</button>
     <button id="btn-reset"  class="btn ghost">リセット</button>
   </header>
