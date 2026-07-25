@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>おたからもじさがし</title>
+<style>
+  :root { --bg:#FDF6EC; --ink:#4A3F35; --gold:#E8A33D; --blue:#59C1E8; --sub:#9A8C7E; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif; background:var(--bg);
+         color:var(--ink); max-width:880px; margin:0 auto; padding:26px 16px 70px; }
+  h1 { font-size:26px; letter-spacing:1px; }
+  .sub { color:var(--sub); font-size:13px; margin:4px 0 18px; }
+  .sub a { color:var(--blue); }
+  .card { background:#fff; border-radius:20px; padding:20px 22px; margin-bottom:16px;
+          box-shadow:0 6px 20px rgba(74,63,53,.09); }
+  h2 { font-size:16px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  /* ── あそびかた ── */
+  .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .step { background:#FBF3E2; border-radius:14px; padding:14px 16px; font-size:13px; line-height:1.9; }
+  .step b { display:block; font-size:14px; margin-bottom:4px; }
+  .setup-note { margin-top:12px; font-size:12.5px; color:var(--sub); line-height:2; }
+  /* ── せってい ── */
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .idbox { width:56px; font-family:Menlo,monospace; font-size:15px; text-align:center;
+           border:2px solid #E8D9C0; border-radius:8px; padding:8px 4px; }
+  .btn { border:none; border-radius:999px; padding:11px 20px; font-size:14px; font-family:inherit;
+         cursor:pointer; color:#fff; background:var(--gold); box-shadow:0 2px 0 rgba(0,0,0,.12); }
+  .btn:active { transform:translateY(2px); box-shadow:none; }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .btn.blue { background:var(--blue); }
+  .btn.big { font-size:16px; padding:13px 30px; }
+  .btn.ghost { background:#C9BBAA; font-size:12.5px; padding:8px 14px; }
+  .role { font-size:12.5px; color:var(--sub); }
+  .pills { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { border:2px solid #E8D9C0; background:#fff; color:var(--ink); border-radius:999px;
+          padding:9px 16px; font-size:14px; font-family:inherit; cursor:pointer; }
+  .pill.on { border-color:var(--gold); background:#FFF3DC; font-weight:bold; }
+  #diff-desc { font-size:12.5px; color:var(--sub); margin-top:6px; min-height:18px; }
+  /* ── ばんめん ── */
+  #big { text-align:center; margin:6px 0 14px; }
+  #big-char { font-size:76px; font-weight:bold; line-height:1.1; min-height:84px; }
+  #big-temp { font-size:15px; color:var(--sub); min-height:22px; }
+  #msg { text-align:center; font-size:15px; min-height:24px; margin-bottom:6px; }
+  #buddy-msg { text-align:center; font-size:12.5px; color:var(--sub); min-height:20px; }
+  #thermo { position:relative; height:26px; border-radius:999px; margin:10px 6px 22px;
+            background:linear-gradient(90deg,#7FB5F0,#BFD9F7,#FFE9A8,#FFB37E,#FF7A6B); }
+  #thermo-marker { position:absolute; top:-11px; font-size:30px; left:0%;
+                   transform:translateX(-50%); transition:left .6s ease; }
+  #tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:8px; }
+  .tile { position:relative; aspect-ratio:1; border-radius:12px; background:#FBF3E2;
+          border:2px solid #EADFC8; font-size:24px; font-weight:bold; font-family:inherit;
+          color:var(--ink); cursor:pointer; transition:transform .1s, background .3s; }
+  .tile:hover { transform:translateY(-2px); }
+  .tile.off { opacity:.25; cursor:default; }
+  .tile.cur { outline:3px solid var(--gold); animation:pulse 1s infinite; }
+  .tile.goal { background:#FFE9A8 !important; border-color:var(--gold); }
+  .tile .chk { position:absolute; right:4px; top:2px; font-size:11px; }
+  @keyframes pulse { 50% { transform:scale(1.06); } }
+  #stats { display:flex; justify-content:center; gap:22px; font-size:13px; color:var(--sub);
+           margin-top:14px; flex-wrap:wrap; align-items:center; }
+  .cf { position:fixed; top:-24px; width:10px; height:14px; border-radius:3px; z-index:99;
+        animation-name:fall; animation-timing-function:linear; animation-fill-mode:forwards; }
+  @keyframes fall { to { transform:translateY(112vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+  <h1>🔎 おたからもじさがし</h1>
+  <p class="sub">A〜Zのもじカードのどこかに、おたからがひとつ。色と音をたよりにさがせ！ ｜ <a href="../../index.html">← ホームへ</a></p>
+
+  <div class="card">
+    <h2>📖 あそびかた（かんたん3ステップ）</h2>
+    <div class="steps">
+      <div class="step"><b>1️⃣ カードをならべる</b>
+        コアキューブについてくる A〜Z のもじカードを、つくえにならべてね。じゅんばんも ばしょも じゆう！</div>
+      <div class="step"><b>2️⃣ のせて さがす</b>
+        「▶はじめる」のあと、キューブをすきなカードへ。おたからに ちかいと 🔥あつい（あか・はやい音）、とおいと ❄️つめたい（あお・ひくい音）。</div>
+      <div class="step"><b>3️⃣ みつけたら クリア！</b>
+        おたからのカードにのれたら、アイネ・クライネのごほうびえんそう🎻 すくない手数でみつけられるかな？</div>
+    </div>
+    <p class="setup-note">
+      🤖 <b>おうえんキューブ（h4i）</b>は A3マットのうえに。あつさに合わせてマットの右へ左へ走る「あつさゲージ」になるよ。
+      おなかのカメラでマットのそとに出たことに気づいたら、<b>じぶんでマットにもどってくる</b>から あんしん！<br>
+      💡 じっきがなくても、下のもじタイルを<b>クリック</b>すれば同じルールであそべるよ。ヒントにこまったら「💡ヒント」ボタン！
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>🎚 せってい</h2>
+    <div class="row">
+      <span>🔎</span><input id="id-you" class="idbox" value="954">
+      <button id="btn-you" class="btn blue">つなぐ</button>
+      <span class="role">さがすキューブ（カードにのせる）</span>
+    </div>
+    <div class="row">
+      <span>🤖</span><input id="id-buddy" class="idbox" value="h4i">
+      <button id="btn-buddy" class="btn blue">つなぐ</button>
+      <span class="role">おうえんキューブ（A3マットのうえ・なくてもOK）</span>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div class="pills" id="pills"></div>
+    </div>
+    <div id="diff-desc"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="btn-start" class="btn big">▶ はじめる（おたからをかくす）</button>
+      <button id="btn-giveup" class="btn ghost" style="display:none">こたえをみる</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="msg">「▶はじめる」をおすと、おたからがかくれるよ</div>
+    <div id="big"><div id="big-char">？</div><div id="big-temp"></div></div>
+    <div id="thermo"><div id="thermo-marker">🤖</div></div>
+    <div id="tiles"></div>
+    <div id="stats">
+      <span id="st-moves">👣 手数: 0</span>
+      <span id="st-hints"></span>
+      <button id="btn-hint" class="btn ghost" disabled>💡 ヒント</button>
+    </div>
+    <div id="buddy-msg"></div>
+  </div>
+
+<script src="toio.js"></script>
+<script src="tts.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+// ── 盤面・マット定数 ─────────────────────────────────────────
+const MAT = { xMin: 98, yMin: 142, xMax: 402, yMax: 358 };   // A3簡易プレイマット
+const BASE = 0x380100;                                        // 簡易カード Standard ID = BASE + ASCII
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const LETTER_NAMES = ['エー','ビー','シー','ディー','イー','エフ','ジー','エイチ','アイ','ジェイ',
+  'ケー','エル','エム','エヌ','オー','ピー','キュー','アール','エス','ティー',
+  'ユー','ブイ','ダブリュー','エックス','ワイ','ゼット'];
+const VOWELS = new Set(['A','E','I','O','U']);
+
+// ── むずかしさ ───────────────────────────────────────────────
+const DIFFS = {
+  easy:   { label: '😊 やさしい', count: 13, led: true,  words: true,  hints: Infinity, moves: Infinity,
+            desc: 'もじは A〜M の13こ ・ 色/音/ことば ぜんぶでヒント ・ 💡なんどでも' },
+  normal: { label: '🙂 ふつう',   count: 26, led: true,  words: false, hints: 2, moves: Infinity,
+            desc: 'もじは A〜Z の26こ ・ 色と音だけでヒント ・ 💡2かいまで' },
+  hard:   { label: '😈 むずかしい', count: 26, led: false, words: false, hints: 1, moves: 12,
+            desc: 'もじは A〜Z ・ 音だけ（LEDなし）・ 💡1かい ・ 12手いないにみつけて！' },
+};
+let diffKey = 'normal';
+
+// ── 状態 ─────────────────────────────────────────────────────
+let cubeYou = null, buddy = null;
+let goal = -1, playing = false;
+let visited = new Map();            // letter idx -> distance
+let hintsLeft = 0, hintIdx = 0, lastId = 0, lastAt = 0;
+let recovering = false, buddyBusy = false, buddyTarget = null;
+
+// ── 音名 → MIDI / アイネ・クライネ（ごほうび曲）──────────────
+const NOTE = (() => {
+  const b = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 }, m = {};
+  for (let o = 3; o <= 6; o++) for (const [k, v] of Object.entries(b)) {
+    m[`${k}${o}`] = 12 * (o + 1) + v; m[`${k}#${o}`] = 12 * (o + 1) + v + 1;
+  }
+  m.R = 128; return m;
+})();
+const EINE = (() => {
+  const beat = 60000 / 132;
+  return [
+    ['G4',1],['R',.5],['D4',.5],['G4',1],['R',.5],['D4',.5],
+    ['G4',.5],['D4',.5],['G4',.5],['B4',.5],['D5',1],['R',1],
+    ['C5',1],['R',.5],['A4',.5],['C5',1],['R',.5],['A4',.5],
+    ['C5',.5],['A4',.5],['F#4',.5],['A4',.5],['D4',1],['R',1],
+  ].map(([n, b]) => [b * beat, NOTE[n]]);
+})();
+
+// ── PCスピーカー（実機がないときの代役）──────────────────────
+let AC = null;
+function pcTones(seq, gain = 0.07) {
+  if (cubeYou || buddy) return;               // 実機があるときはキューブが鳴る
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    let t = AC.currentTime + 0.02;
+    for (const [ms, midi] of seq) {
+      if (midi !== 128) {
+        const o = AC.createOscillator(), g = AC.createGain();
+        o.type = 'square'; o.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + ms / 1000 * 0.9);
+        o.connect(g); g.connect(AC.destination);
+        o.start(t); o.stop(t + ms / 1000 * 0.92);
+      }
+      t += ms / 1000;
+    }
+  } catch (e) {}
+}
+
+// ── UI 構築 ──────────────────────────────────────────────────
+for (const [k, d] of Object.entries(DIFFS)) {
+  const b = document.createElement('button');
+  b.className = 'pill'; b.id = `pill-${k}`; b.textContent = d.label;
+  b.onclick = () => { diffKey = k; refreshPills(); if (playing) start(); };
+  $('pills').appendChild(b);
+}
+function refreshPills() {
+  for (const k of Object.keys(DIFFS)) $(`pill-${k}`).classList.toggle('on', k === diffKey);
+  $('diff-desc').textContent = DIFFS[diffKey].desc;
+}
+LETTERS.forEach((ch, i) => {
+  const b = document.createElement('button');
+  b.className = 'tile'; b.id = `tile-${ch}`;
+  b.innerHTML = `${ch}<span class="chk"></span>`;
+  b.onclick = () => onLetter(i);
+  $('tiles').appendChild(b);
+});
+refreshPills();
+refreshTiles();
+
+function refreshTiles() {
+  const d = DIFFS[diffKey];
+  LETTERS.forEach((ch, i) => {
+    const t = $(`tile-${ch}`);
+    t.classList.toggle('off', i >= d.count);
+    t.classList.remove('cur', 'goal');
+    t.style.background = ''; t.querySelector('.chk').textContent = '';
+  });
+}
+
+// ── 接続 ─────────────────────────────────────────────────────
+$('btn-you').onclick = async () => {
+  try {
+    $('msg').textContent = '🔎 さがすキューブ 接続中…';
+    cubeYou = await toioManager.addCube($('id-you').value);
+    $('btn-you').textContent = `✓ ${cubeYou.name}`;
+    cubeYou.on('standardId', ({ id }) => {
+      const a = id - BASE;
+      if (a >= 0x41 && a <= 0x5A) {
+        if (id === lastId && Date.now() - lastAt < 1200) return;   // 同カード連続通知は無視
+        lastId = id; lastAt = Date.now();
+        onLetter(a - 0x41);
+      } else if (playing) {
+        $('msg').textContent = 'それは もじ（A〜Z）のカードじゃないみたい！';
+      }
+    });
+    cubeYou.on('standardIdMissed', () => { if (playing) $('big-temp').textContent = '…つぎのカードへ！'; });
+    cubeYou.on('disconnect', () => { cubeYou = null; $('btn-you').textContent = 'つなぐ'; });
+    await cubeYou.setLED(232, 163, 61, 0);
+    await cubeYou.playSoundEffect(0);
+    $('msg').textContent = `✓ ${cubeYou.name} OK！「▶はじめる」でスタート`;
+  } catch (e) { $('msg').textContent = `接続できず: ${e.name}（電源・他タブ・IDを確認）`; }
+};
+
+$('btn-buddy').onclick = async () => {
+  try {
+    $('buddy-msg').textContent = '🤖 おうえんキューブ 接続中…';
+    buddy = await toioManager.addCube($('id-buddy').value);
+    $('btn-buddy').textContent = `✓ ${buddy.name}`;
+    buddy.on('matMissed', () => { if (!recovering) recoverToMat(); });   // カメラがマット外を検知
+    buddy.on('disconnect', () => { buddy = null; $('btn-buddy').textContent = 'つなぐ'; });
+    await buddy.setLED(89, 193, 232, 0);
+    await buddy.playSoundEffect(0);
+    $('buddy-msg').textContent = '🤖 おうえんキューブ OK！A3マットのうえに おいてね';
+    buddyGo(matGaugeX(0.5), (MAT.yMin + MAT.yMax) / 2);
+  } catch (e) { $('buddy-msg').textContent = `🤖 接続できず: ${e.name}`; }
+};
+
+// ── マット外からの自動復帰（おなかのカメラ = 光学センサー）────
+async function recoverToMat() {
+  if (!buddy || recovering) return;
+  recovering = true; buddyTarget = null;
+  $('buddy-msg').textContent = '🤖 マットのそとに出ちゃった！じぶんでもどるね…';
+  TTS.speak('おっとっと、もどるね！');
+  try { await buddy.stop(); } catch (e) {}
+  for (let i = 0; i < 5 && buddy && !buddy.onMat; i++) {
+    try {
+      await buddy.move(-26, -26, 650);            // まず後退（出たルートを引き返す）
+      await sleep(320);
+      if (!buddy || buddy.onMat) break;
+      await buddy.move(32, -32, 260);             // だめなら少し向きをかえて前へ
+      await buddy.move(30, 30, 480);
+      await sleep(320);
+    } catch (e) { break; }
+  }
+  if (buddy && buddy.onMat) {
+    // 端に残らないよう、内側の安全地帯まで入ってから持ち場へ
+    const sx = clamp(buddy.position.x, MAT.xMin + 60, MAT.xMax - 60);
+    const sy = clamp(buddy.position.y, MAT.yMin + 60, MAT.yMax - 60);
+    try { await buddy.moveTo(sx, sy, null, 50, 'POS_ONLY'); } catch (e) {}
+    $('buddy-msg').textContent = '🤖 マットにもどれたよ！';
+    TTS.speak('ただいま！');
+    buddy.playSoundEffect(1).catch(() => {});
+  } else if (buddy) {
+    $('buddy-msg').textContent = '🤖 うまくもどれない…てで マットにもどしてあげてね';
+    TTS.speak('たすけて〜、てで もどして？');
+  }
+  recovering = false;
+  updateBuddyGauge(lastHeat);
+}
+
+// ── おうえんキューブ = マット上のあつさゲージ ─────────────────
+const matGaugeX = heat => MAT.xMin + 50 + heat * (MAT.xMax - MAT.xMin - 100);
+let lastHeat = 0.5;
+function updateBuddyGauge(heat) {
+  lastHeat = heat;
+  $('thermo-marker').style.left = `${8 + heat * 84}%`;
+  buddyGo(matGaugeX(heat), (MAT.yMin + MAT.yMax) / 2);
+}
+async function buddyGo(x, y) {
+  buddyTarget = { x, y };
+  if (buddyBusy || !buddy || recovering) return;
+  buddyBusy = true;
+  while (buddyTarget && buddy && !recovering) {
+    const t = buddyTarget; buddyTarget = null;
+    try { await buddy.moveTo(t.x, t.y, null, 55, 'POS_ONLY'); } catch (e) {}
+  }
+  buddyBusy = false;
+}
+
+// ── ゲーム進行 ───────────────────────────────────────────────
+$('btn-start').onclick = start;
+$('btn-hint').onclick = giveHint;
+$('btn-giveup').onclick = () => finish(false, 'こたえをみた');
+
+function start() {
+  const d = DIFFS[diffKey];
+  goal = Math.floor(Math.random() * d.count);
+  playing = true;
+  visited.clear(); hintsLeft = d.hints; hintIdx = 0; lastId = 0;
+  refreshTiles();
+  $('big-char').textContent = '？'; $('big-temp').textContent = '';
+  $('btn-hint').disabled = false;
+  $('btn-giveup').style.display = 'inline-block';
+  $('btn-start').textContent = '🔁 やりなおす（かくしなおす）';
+  $('msg').textContent = `🕵️ かくしたよ！キューブをもじカードにのせてさがして（${d.count === 13 ? 'A〜M' : 'A〜Z'}）`;
+  updateStats();
+  updateBuddyGauge(0.5);
+  TTS.speak('おたから、かくしたよ！さがしてみて！');
+  cubeYou?.setLED(232, 163, 61, 0).catch(() => {});
+}
+
+function heatOf(dist) { return 1 - dist / (DIFFS[diffKey].count - 1); }
+function tempWord(dist) {
+  if (dist <= 1) return ['🔥 めちゃくちゃ あつい！！', 'すごくあついよ！'];
+  if (dist <= 3) return ['☀️ あつい！', 'あついよ！'];
+  if (dist <= 6) return ['🌤 ちょっと あたたかい', 'ちょっとあたたかいかも'];
+  return ['❄️ つめたい…', 'つめたーい'];
+}
+
+async function onLetter(i) {
+  if (!playing) { $('msg').textContent = 'まず「▶はじめる」をおしてね！'; return; }
+  const d = DIFFS[diffKey];
+  if (i >= d.count) { $('msg').textContent = `こんかいは ${d.count === 13 ? 'A〜M' : 'A〜Z'} のカードだけだよ！`; return; }
+
+  const ch = LETTERS[i];
+  const isNew = !visited.has(i);
+  const dist = Math.abs(i - goal);
+  if (isNew) visited.set(i, dist);
+  updateStats();
+
+  LETTERS.forEach(c2 => $(`tile-${c2}`).classList.remove('cur'));
+  $(`tile-${ch}`).classList.add('cur');
+  $('big-char').textContent = ch;
+
+  if (dist === 0) { win(); return; }
+
+  const heat = heatOf(dist);
+  const [tempTxt, tempSay] = tempWord(dist);
+  $('big-temp').textContent = tempTxt;
+  $('msg').textContent = `「${ch}」… ${tempTxt}`;
+  // タイルに「あつさの色」を記録（むずかしいは音だけなので色なし）
+  const tl = $(`tile-${ch}`);
+  tl.querySelector('.chk').textContent = '✓';
+  if (d.led) tl.style.background = heatColorCSS(heat);
+  updateBuddyGauge(heat);
+
+  // LED（さがすキューブ + おうえんキューブ）
+  if (d.led) {
+    const [r, g, b] = heatRGB(heat);
+    cubeYou?.setLED(r, g, b, 0).catch(() => {});
+    if (!recovering) buddy?.setLED(r, g, b, 0).catch(() => {});
+  }
+  // ビープ: あついほど 高く・はやく・かいすう多く
+  const seq = beepSeq(heat);
+  cubeYou?.playMelody(seq).catch(() => {});
+  if (!cubeYou && !recovering) buddy?.playMelody(seq).catch(() => {});
+  pcTones(seq);
+  // やさしい: ことばのヒントも（まえ / あと）
+  if (d.words) TTS.speak(`${LETTER_NAMES[i]}。${tempSay}。${goal > i ? 'もっと あとのもじ！' : 'もっと まえのもじ！'}`);
+
+  // むずかしい: 手数制限
+  if (isNew && visited.size >= d.moves && playing) finish(false, `${d.moves}手 つかいきっちゃった`);
+}
+
+function beepSeq(heat) {
+  const note = 57 + Math.round(heat * 27);
+  const n = 1 + Math.round(heat * 3);
+  const seq = [];
+  for (let k = 0; k < n; k++) { seq.push([110, note, 200]); seq.push([70, 128]); }
+  return seq;
+}
+function heatRGB(heat) {
+  return [Math.round(60 + heat * 195), Math.round(140 - heat * 60), Math.round(255 - heat * 195)];
+}
+function heatColorCSS(heat) {
+  const [r, g, b] = heatRGB(heat);
+  return `rgba(${r},${g},${b},0.35)`;
+}
+
+// ── ヒント ───────────────────────────────────────────────────
+function giveHint() {
+  if (!playing) return;
+  if (hintsLeft <= 0) { $('msg').textContent = '💡 ヒントは もうつかえないよ…'; return; }
+  const g = goal, d = DIFFS[diffKey];
+  let text;
+  if (hintIdx === 0) {
+    text = VOWELS.has(LETTERS[g]) ? '💡 おたからは ぼいん（A・E・I・O・U）のどれか！'
+                                  : '💡 おたからは ぼいん（A・E・I・O・U）じゃないよ！';
+  } else if (hintIdx === 1) {
+    const half = Math.floor(d.count / 2);
+    text = g < half ? `💡 おたからは ${LETTERS[0]}〜${LETTERS[half - 1]} のあいだ！`
+                    : `💡 おたからは ${LETTERS[half]}〜${LETTERS[d.count - 1]} のあいだ！`;
+  } else {
+    let best = null;
+    for (const [i, dist] of visited) if (best === null || dist < visited.get(best)) best = i;
+    text = best === null ? '💡 まず どこかのカードに のせてみて！'
+                         : `💡 いままでで いちばん ちかかったのは「${LETTERS[best]}」！`;
+  }
+  hintIdx = (hintIdx + 1) % 3;
+  if (hintsLeft !== Infinity) hintsLeft--;
+  $('msg').textContent = text;
+  TTS.speak(text.replace('💡', ''));
+  updateStats();
+}
+
+function updateStats() {
+  $('st-moves').textContent = `👣 手数: ${visited.size}${DIFFS[diffKey].moves !== Infinity && playing ? ` / ${DIFFS[diffKey].moves}` : ''}`;
+  $('st-hints').textContent = hintsLeft === Infinity ? '💡 ヒントむげん' :
+    playing ? `💡 のこりヒント: ${hintsLeft}` : '';
+}
+
+// ── クリア / ざんねん ────────────────────────────────────────
+async function win() {
+  playing = false;
+  const ch = LETTERS[goal];
+  $(`tile-${ch}`).classList.add('goal');
+  $('big-char').textContent = `${ch} 🏆`;
+  $('big-temp').textContent = 'おたから はっけん！！';
+  $('msg').textContent = `🎉 クリア！おたからは「${ch}」だった！（手数 ${visited.size}）ごほうびえんそう♪`;
+  $('btn-giveup').style.display = 'none'; $('btn-hint').disabled = true;
+  updateStats(); confettiRain();
+  TTS.speak(`やったー！おたからは、${LETTER_NAMES[goal]}！アイネクライネで おいわいだ！`);
+  updateBuddyGauge(1);
+  // ごほうび: アイネ・クライネ・ナハトムジーク（実機がなければPCで）
+  cubeYou?.playMelody(EINE, 2).catch(() => {});
+  if (!recovering) buddy?.playMelody(EINE, 2).catch(() => {});
+  if (!cubeYou && !buddy) pcTones([...EINE, ...EINE], 0.09);
+  rainbow(cubeYou); rainbow(buddy);
+  if (buddy && !recovering) {   // おうえんキューブはくるくるダンス
+    try {
+      for (let k = 0; k < 6 && buddy; k++) await buddy.move(k % 2 ? 55 : -55, k % 2 ? -55 : 55, 420);
+      await buddy?.stop();
+    } catch (e) {}
+  }
+}
+
+function finish(won, reason) {
+  playing = false;
+  const ch = LETTERS[goal];
+  $(`tile-${ch}`).classList.add('goal');
+  $('msg').textContent = `😢 ${reason}… おたからは「${ch}」だった！「▶はじめる」でもういっかい！`;
+  $('big-temp').textContent = '';
+  $('btn-giveup').style.display = 'none'; $('btn-hint').disabled = true;
+  updateStats();
+  TTS.speak(`ざんねん！おたからは、${LETTER_NAMES[goal]}だったよ。もういっかい、あそぼ？`);
+  cubeYou?.playSoundEffect(2).catch(() => {});
+}
+
+async function rainbow(cube) {
+  if (!cube) return;
+  for (let t = 0; t < 16; t++) {
+    const h = (t * 40) % 360, c = hsl2rgb(h);
+    try { await cube.setLED(c[0], c[1], c[2], 170); } catch (e) { return; }
+  }
+  cube.setLED(255, 215, 0, 0).catch(() => {});
+}
+function hsl2rgb(h) {   // s=1, l=0.5 の標準式
+  const f = n => { const k = (n + h / 30) % 12; return Math.round(255 * (0.5 - 0.5 * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
+  return [f(0), f(8), f(4)];
+}
+
+function confettiRain() {
+  const cols = ['#FF6FA5', '#59C1E8', '#E8A33D', '#7FD8A4', '#B78BE8'];
+  for (let i = 0; i < 70; i++) {
+    const s = document.createElement('span');
+    s.className = 'cf';
+    s.style.left = `${Math.random() * 100}vw`;
+    s.style.background = cols[i % cols.length];
+    s.style.animationDuration = `${2.4 + Math.random() * 1.8}s`;
+    s.style.animationDelay = `${Math.random() * 0.8}s`;
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 5200);
+  }
+}
+</script>
+</body>
+</html>
