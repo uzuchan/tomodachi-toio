@@ -9,6 +9,10 @@ const COLS = 6, ROWS = 4, GOAL = COLS * ROWS - 1;   // 24マス, GOAL=23
 const CELL_W = (MAT.xMax - MAT.xMin) / COLS;
 const CELL_H = (MAT.yMax - MAT.yMin) / ROWS;
 
+// 追い抜き迂回: near=コマがいる判定距離 / side=よけ幅 / land=同マス着地の駐車ずらし
+// / margin=マット端の安全余白（すべてマット座標単位、キューブ一辺≈23.5）
+const AVOID = { near: 36, side: 38, land: 30, margin: 14 };
+
 // マスの種類（固定レイアウト）
 const CELL_TYPE = { 0:'start', 2:'dance', 5:'song', 8:'dance', 11:'nade',
                     14:'jump', 17:'rest', 20:'song', 23:'goal' };
@@ -103,6 +107,48 @@ function posToCell(x, y) {
 
 function hexRGB(h) { return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
 
+// ── 追い抜き迂回（あなたの実機コマをよけて走る）───────────────
+// あなたのコマの現在地。実機がマット上にいるときだけ障害物になる
+function obstaclePos() {
+  const c = players[0].cube;
+  return c && c.onMat && c.position ? { x: c.position.x, y: c.position.y } : null;
+}
+function clampMat(x, y) {
+  return { x: constrain(x, MAT.xMin + AVOID.margin, MAT.xMax - AVOID.margin),
+           y: constrain(y, MAT.yMin + AVOID.margin, MAT.yMax - AVOID.margin) };
+}
+const near = (a, b) => dist(a.x, a.y, b.x, b.y) < AVOID.near;
+
+// 通過マス p にあなたのコマがいたら、進行方向と直交に膨らむ迂回点を返す
+function detourVia(p) {
+  const ob = obstaclePos();
+  if (!ob) return null;
+  const c = cellPos(p);
+  if (!near(ob, c)) return null;
+  const a = cellPos(Math.max(0, p - 1)), b = cellPos(Math.min(GOAL, p + 1));
+  const len = dist(a.x, a.y, b.x, b.y) || 1;
+  const dx = (b.x - a.x) / len, dy = (b.y - a.y) / len;
+  const cand = [ clampMat(c.x - dy * AVOID.side, c.y + dx * AVOID.side),
+                 clampMat(c.x + dy * AVOID.side, c.y - dx * AVOID.side) ];
+  // マット内に収めた上で、コマから遠い側を通る
+  return dist(cand[0].x, cand[0].y, ob.x, ob.y) >= dist(cand[1].x, cand[1].y, ob.x, ob.y)
+    ? cand[0] : cand[1];
+}
+
+// 着地マスにあなたのコマがいたら、ひとつ前のマス側に寄せて「となりにちょこん」
+function landSpot(p) {
+  const c = cellPos(p);
+  const ob = obstaclePos();
+  if (!ob || !near(ob, c)) return { x: c.x, y: c.y };
+  let dx = 0, dy = -1;                       // スタートマスは上方向に寄せる
+  if (p > 0) {
+    const back = cellPos(p - 1);
+    const len = dist(back.x, back.y, c.x, c.y) || 1;
+    dx = (back.x - c.x) / len; dy = (back.y - c.y) / len;
+  }
+  return clampMat(c.x + dx * AVOID.land, c.y + dy * AVOID.land);
+}
+
 // ── ゲーム進行 ────────────────────────────────────────────────
 function startGame() {
   players.forEach(pl => { pl.pos = 0; pl.drawPos = 0; pl.rest = false; pl.goal = false; });
@@ -110,7 +156,7 @@ function startGame() {
   turn = 0;
   say('ともだちすごろく、はじめるよ！さきにゴールしても、まっててあげてね！');
   message = 'ゲームスタート！';
-  const s = cellPos(0);
+  const s = landSpot(0);   // スタートマスに954が置いてあったら横にちょこん
   players[1].cube?.moveTo(s.x, s.y, 0, 60).catch(() => {});
   setTimeout(yourTurn, 2200);
 }
@@ -169,10 +215,17 @@ async function moveFriend() {
   const from = pl.pos;
   pl.pos = targetIdx;
   if (pl.cube) {
+    let dodged = false;
     for (let p = from + 1; p <= targetIdx; p++) {
-      const c = cellPos(p);
       pl.drawPos = p;
-      try { await pl.cube.moveTo(c.x, c.y, null, 70, 'POS_ONLY'); } catch (e) {}
+      // 通過マスにあなたのコマ → 横に膨らんで迂回。着地マスにいたら手前に寄せて駐車
+      const via  = p < targetIdx ? detourVia(p) : null;
+      const goal = p === targetIdx ? landSpot(p) : cellPos(p);
+      if (via && !dodged) { dodged = true; message = '🤖 よいしょ、よけてとおるよ〜'; say('よけてとおりま〜す！'); }
+      try {
+        if (via) await pl.cube.moveTo(via.x, via.y, null, 70, 'POS_ONLY');
+        else     await pl.cube.moveTo(goal.x, goal.y, null, 70, 'POS_ONLY');
+      } catch (e) {}
     }
   } else {
     for (let p = from + 1; p <= targetIdx; p++) { pl.drawPos = p; await sleep(420); }
