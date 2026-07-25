@@ -65,6 +65,7 @@
   </div>
 
 <script src="toio.js"></script>
+<script src="tts.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let cube = null, word = '', lastId = 0, lastAt = 0;
@@ -167,18 +168,14 @@ function readWord() {
 }
 function clearWord() { word = ''; $('word-strip').innerHTML = '&nbsp;'; }
 
-// ── 音声 ─────────────────────────────────────────────────────
+// ── 音声（VOICEVOX優先・なければWeb Speech — tts.js）──────────
 function speak(text) {
-  if (!$('chk-voice').checked || !window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'ja-JP'; u.pitch = 1.4; u.rate = 1.05;
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  if (!$('chk-voice').checked) return;
+  TTS.speak(text);
 }
 function speakEn(text) {
-  if (!$('chk-voice').checked || !window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text.toLowerCase());
-  u.lang = 'en-US'; u.pitch = 1.2; u.rate = 0.95;
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  if (!$('chk-voice').checked) return;
+  TTS.speak(text.toLowerCase(), { lang: 'en-US', webPitch: 1.2, webRate: 0.95 });
 }
 
 function logLine(t) {

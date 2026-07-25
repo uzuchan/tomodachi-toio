@@ -13,6 +13,12 @@ apps/
   toio-concert/         … 1〜2台用。MIDI一括送信で演奏(アイネクライネ、あつ森テーマ等)+拍同期ダンス/LED。
                           マット不要。2台デュエットはセクション毎にPromise.allで同時書込→境界で再同期
   moji-board/           … 1台用。簡易カード(数字/A-Z/記号)のStandard IDを読んで表示+読み上げ
+  tomodachi-sugoroku/   … ボドゲ。A3マット=24マスすごろく盤。友キューブは自走するコマ。
+                          手コマは位置センサーで正しいマス到達を検出。実機0台でも遊べる
+※読み上げは各アプリ共通の tts.js: VOICEVOXエンジン(127.0.0.1:50021)を自動検出して
+  ずんだもんボイス、なければ Web Speech API にフォールバック。?vv=URL で変更可。
+  Pages(https)からローカルエンジンを叩くにはエンジン側 --cors_policy_mode all が必要な場合あり。
+  tts.js も toio.js 同様、各アプリにコピーして同期する。
     index.html          … UI（接続ボタン等はHTML側）
     sketch.js           … 感情エンジン + デジタルツイン描画 (p5.js)
     toio.js             … Web Bluetooth ライブラリ（下記参照）

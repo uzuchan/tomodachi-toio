@@ -223,14 +223,12 @@ function say(key) {
   chirp(emo.bubble.length);   // キューブ側ピヨピヨ語
 }
 
-// toio単体は音声合成不可（MIDIのみ）→ PCの音声合成で喋り、キューブはピヨピヨ鳴く
+// toio単体は音声合成不可（MIDIのみ）→ PC側で喋る。
+// VOICEVOXエンジンが起動していれば ずんだもんボイス、なければ Web Speech API（tts.js）
 function speak(text) {
   const box = document.getElementById('chk-voice');
-  if (!box?.checked || !window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text.replace(/[♡♥…！？]/g, ''));
-  u.lang = 'ja-JP'; u.pitch = 1.8; u.rate = 1.15;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
+  if (!box?.checked) return;
+  TTS.speak(text.replace(/[…！？]/g, ''));
 }
 
 function chirp(len) {
