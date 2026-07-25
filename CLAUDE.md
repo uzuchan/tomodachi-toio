@@ -11,6 +11,7 @@ apps/
   connect-check/        … 実機との接続確認だけをする最小ツール（トラブルシュート用）
   tomodachi-toio/       … メイン作品。AIの"友"キューブが手動キューブになついていくゲーム
   toio-concert/         … 1台用。MIDI一括送信で演奏(アイネクライネ等)+拍同期ダンス/LED。マット不要
+  moji-board/           … 1台用。簡易カード(数字/A-Z/記号)のStandard IDを読んで表示+読み上げ
     index.html          … UI（接続ボタン等はHTML側）
     sketch.js           … 感情エンジン + デジタルツイン描画 (p5.js)
     toio.js             … Web Bluetooth ライブラリ（下記参照）
@@ -45,8 +46,11 @@ python3 -m http.server 8080   # リポジトリルートで
 - `cube.setLED(r,g,b,ms)` / `cube.playSound(note,ms)` / `cube.playSoundEffect(id)`
 - `cube.playMelody([[ms,note,vol?],...], repeat)` メロディ一括再生（独自拡張）。
   1書き込み59音まで自動分割。音符128=休符。タイミングはキューブ側で刻む。`stopSound()`で中断
-- イベント: `cube.on('position'|'button'|'motion'|'attitude'|'matMissed'|'disconnect', fn)`
+- イベント: `cube.on('position'|'button'|'motion'|'attitude'|'matMissed'|'standardId'|'standardIdMissed'|'disconnect', fn)`
   - `motion` は `{horizontal, collision, doubleTap, posture, shake}`（この拡張は独自）
+  - `standardId` は `{id, angle}`。ID通知type: 0x01=位置, 0x02=Standard ID, 0x03=マット外, 0x04=カード外
+  - **簡易カード（コアキューブ付属の数字/A-Z/記号）の Standard ID = `0x380100 + ASCIIコード`**
+    （公式表: toio-spec docs/info_standard_id.md。moji-board の decode() に実装済み）
 - コマンド系メソッドは完了まで await する設計。連続駆動ループでは
   `move(l,r,0)` を busy フラグ付きで送る（sketch.js の `drive()` 参照）
 

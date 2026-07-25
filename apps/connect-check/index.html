@@ -72,6 +72,7 @@
       <tr><td>名前</td><td class="val" id="v-name">—</td></tr>
       <tr><td>バッテリー</td><td class="val" id="v-batt">—</td></tr>
       <tr><td>位置 (マット上)</td><td class="val" id="v-pos">マットに置いてね</td></tr>
+      <tr><td>Standard ID</td><td class="val" id="v-std">—（カード/ボードに乗せると出ます）</td></tr>
       <tr><td>ボタン</td><td class="val" id="v-btn">—</td></tr>
       <tr><td>姿勢角 (オイラー)</td><td class="val" id="v-att">—</td></tr>
       <tr><td>向き・水平</td><td class="val" id="v-flat">—</td></tr>
@@ -179,6 +180,11 @@ $('btn-connect').onclick = async () => {
 
     cube.on('position', p => { $('v-pos').textContent = `x=${p.x}  y=${p.y}  角度=${p.angle}°`; });
     cube.on('matMissed', () => { $('v-pos').textContent = 'マットの外（持ち上げ中？）'; });
+    cube.on('standardId', s => {
+      $('v-std').textContent = `${s.id} (0x${s.id.toString(16)}) 角度=${s.angle}°`;
+      log(`🎴 Standard ID: ${s.id}`);
+    });
+    cube.on('standardIdMissed', () => { $('v-std').textContent = 'カードから離れた'; });
     cube.on('button', b => { $('v-btn').textContent = b ? '押されてる！' : '離した'; });
     cube.on('attitude', a => { $('v-att').textContent = `roll=${a.roll} pitch=${a.pitch} yaw=${a.yaw}`; });
 

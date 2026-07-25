@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>もじボード</title>
+<style>
+  :root { --bg:#FDF6EC; --ink:#4A3F35; --accent:#F5A623; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif; background:var(--bg);
+         color:var(--ink); max-width:680px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { font-size:24px; margin-bottom:4px; }
+  .sub { color:#9A8C7E; font-size:13px; margin-bottom:18px; }
+  .sub a { color:#59A1E8; }
+  .card { background:#fff; border-radius:18px; padding:18px 20px; margin-bottom:14px;
+          box-shadow:0 4px 16px rgba(74,63,53,.08); }
+  .btn { border:none; border-radius:999px; padding:12px 20px; font-size:15px; font-family:inherit;
+         cursor:pointer; color:#fff; background:var(--accent); box-shadow:0 2px 0 rgba(0,0,0,.12); }
+  .btn:active { transform:translateY(2px); box-shadow:none; }
+  .btn.mini { padding:8px 16px; font-size:13px; background:#C9BBAA; }
+  .btn.blue { background:#59C1E8; }
+  .idbox { width:56px; font-family:Menlo,monospace; font-size:15px; text-align:center;
+           border:2px solid #E8D9C0; border-radius:8px; padding:8px 4px; }
+  #status { font-size:13px; color:#9A8C7E; margin-top:8px; min-height:18px; }
+  #big { text-align:center; padding:12px 0 4px; }
+  #big-char { font-size:120px; font-weight:bold; line-height:1.1; transition:color .15s;
+              min-height:132px; }
+  #big-name { font-size:16px; color:#9A8C7E; min-height:24px; }
+  #word-strip { font-family:Menlo,monospace; font-size:34px; letter-spacing:6px; min-height:48px;
+                background:#F8F1E4; border-radius:12px; padding:8px 14px; margin-bottom:10px;
+                overflow-x:auto; white-space:nowrap; }
+  #log { font-family:Menlo,monospace; font-size:12px; color:#9A8C7E; line-height:1.7;
+         max-height:140px; overflow-y:auto; }
+</style>
+</head>
+<body>
+  <h1>🔤 もじボード</h1>
+  <p class="sub">数字・アルファベット・記号カードにキューブを乗せると読んでくれる ｜ <a href="../../index.html">← ホームへ</a></p>
+
+  <div class="card" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+    <input id="cube-id" class="idbox" value="954" title="キューブID（空で全toio表示）">
+    <button id="btn-connect" class="btn blue">toioを接続</button>
+    <label style="font-size:13px"><input type="checkbox" id="chk-voice" checked> 🔊よみあげ</label>
+    <div id="status" style="flex-basis:100%">未接続。toioコアキューブ付属の簡易カード（0-9 / A-Z / 記号）対応</div>
+  </div>
+
+  <div class="card">
+    <div id="big">
+      <div id="big-char">🤖</div>
+      <div id="big-name">カードの上にキューブを置いてね</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:15px; margin-bottom:8px">ことばづくり（乗せた文字がたまるよ）</h2>
+    <div id="word-strip">&nbsp;</div>
+    <button class="btn mini blue" onclick="readWord()">▶ ことばをよむ</button>
+    <button class="btn mini" onclick="clearWord()">クリア</button>
+    <span style="font-size:12px; color:#9A8C7E">（キューブのボタンでも読み上げ）</span>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:15px; margin-bottom:8px">読み取りログ</h2>
+    <div id="log"></div>
+  </div>
+
+<script src="toio.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let cube = null, word = '', lastId = 0, lastAt = 0;
+
+// ── 簡易カード対応表 (toio spec: Standard ID = 0x380100 + ASCII) ──────────
+const BASE = 0x380100;
+const DIGIT_NAMES = ['ゼロ','いち','に','さん','よん','ご','ろく','なな','はち','きゅう'];
+const LETTER_NAMES = ['エー','ビー','シー','ディー','イー','エフ','ジー','エイチ','アイ','ジェイ',
+  'ケー','エル','エム','エヌ','オー','ピー','キュー','アール','エス','ティー',
+  'ユー','ブイ','ダブリュー','エックス','ワイ','ゼット'];
+const SYMBOLS = {   // ascii → [表示, よみ]
+  0x21:['！','びっくりマーク'], 0x25:['％','パーセント'], 0x2A:['×','かける'],
+  0x2B:['＋','たす'], 0x2D:['−','ひく'], 0x2F:['÷','わる'],
+  0x3C:['←','ひだり'], 0x3D:['＝','イコール'], 0x3E:['→','みぎ'],
+  0x3F:['？','はてな'], 0x5E:['↑','うえ'], 0x5F:['↓','した'],
+};
+// トイオ・コレクション拡張パックの読み取りマーク（会場の他ボード対策）
+const TCE = { 3670092:'クイックスカンク(2P)', 3670094:'クイックスカンク(CPU)', 3670096:'かいじゅうバスターズ',
+  3670098:'ウオッチアウト(フリー)', 3670100:'ウオッチアウト(2P)', 3670102:'ウオッチアウト(CPU)',
+  3670104:'カラーメモリー', 3670106:'レーザービーム(チャレンジ)', 3670108:'レーザービーム(クリエイト)',
+  3670110:'バトン', 3670112:'プルバック', 3670114:'ダッシュ', 3670116:'ドントディスターブ(ノーマル)',
+  3670118:'ドントディスターブ(ロデオ)', 3670120:'こたえ', 3670122:'ミュージック(曲1)',
+  3670124:'ミュージック(曲2)', 3670126:'ミュージック(曲3)', 3670128:'ミュージック(曲4)' };
+
+function decode(id) {
+  const a = id - BASE;
+  if (a >= 0x30 && a <= 0x39) return { char: String.fromCharCode(a), name: DIGIT_NAMES[a - 0x30], kind: 'digit',  col: '#59C1E8', ascii: a };
+  if (a >= 0x41 && a <= 0x5A) return { char: String.fromCharCode(a), name: LETTER_NAMES[a - 0x41], kind: 'letter', col: '#FF6FA5', ascii: a };
+  if (SYMBOLS[a])             return { char: SYMBOLS[a][0], name: SYMBOLS[a][1], kind: 'symbol', col: '#34C77B', ascii: a };
+  if (TCE[id])                return { char: '🎴', name: `拡張パック: ${TCE[id]}`, kind: 'tce', col: '#8B6FD8' };
+  return { char: '❓', name: `未知のカード (ID: ${id} / 0x${id.toString(16)})`, kind: 'unknown', col: '#9A8C7E' };
+}
+
+// ── 接続 ─────────────────────────────────────────────────────
+$('btn-connect').onclick = async () => {
+  try {
+    $('status').textContent = '接続中…';
+    cube = await toioManager.addCube($('cube-id').value);
+    $('status').textContent = `✓ ${cube.name} と接続中。カードに乗せてみて！`;
+    $('btn-connect').textContent = `✓ ${cube.name}`;
+    cube.on('standardId', ({ id }) => onCard(id));
+    cube.on('standardIdMissed', () => { $('big-name').textContent = '…つぎのカードへ'; });
+    cube.on('button', p => { if (p) readWord(); });
+    cube.on('disconnect', () => {
+      cube = null;
+      $('status').textContent = '切断されました';
+      $('btn-connect').textContent = 'toioを接続';
+    });
+    await cube.setLED(255, 180, 40, 0);
+    await cube.playSoundEffect(0);
+  } catch (e) {
+    $('status').textContent = `接続できず: ${e.name}（電源・他タブ・IDを確認）`;
+  }
+};
+
+// ── カード読み取り ────────────────────────────────────────────
+function onCard(id) {
+  const now = performance.now();
+  if (id === lastId && now - lastAt < 900) { lastAt = now; return; }  // 連続通知のデバウンス
+  lastId = id; lastAt = now;
+
+  const d = decode(id);
+  $('big-char').textContent = d.char;
+  $('big-char').style.color = d.col;
+  $('big-name').textContent = d.name;
+  logLine(`${d.char}  ${d.name}  (ID ${id})`);
+
+  if (d.kind === 'digit' || d.kind === 'letter') {
+    word += d.char;
+    $('word-strip').textContent = word;
+  }
+  speak(d.name);
+  feedback(d);
+}
+
+function feedback(d) {
+  if (!cube) return;
+  const [r, g, b] = { digit: [80,180,255], letter: [255,110,165], symbol: [50,200,120],
+                      tce: [140,100,255], unknown: [255,255,255] }[d.kind];
+  cube.setLED(r, g, b, 0).catch(() => {});
+  if (d.kind === 'digit') {
+    const scale = [0,2,4,5,7,9,11,12,14,16];              // ドレミ… 数字=音階
+    cube.playMelody([[220, 72 + scale[d.ascii - 0x30]]]).catch(() => {});
+  } else if (d.kind === 'letter') {
+    const n = 65 + (d.ascii - 0x41) % 24;
+    cube.playMelody([[70, n + 12], [130, n + 19]]).catch(() => {});
+  } else {
+    cube.playSoundEffect(5).catch(() => {});
+  }
+}
+
+// ── ことば ───────────────────────────────────────────────────
+function readWord() {
+  if (!word) { speak('まだなにもないよ'); return; }
+  logLine(`▶ ことば: ${word}`);
+  const isEnglish = /^[A-Z]{2,}$/.test(word);
+  if (isEnglish) speakEn(word);                 // HELLO → 英単語として発音
+  else speak(word.split('').map(c => decode(BASE + c.charCodeAt(0)).name).join('、'));
+  cube?.playSoundEffect(6).catch(() => {});
+}
+function clearWord() { word = ''; $('word-strip').innerHTML = '&nbsp;'; }
+
+// ── 音声 ─────────────────────────────────────────────────────
+function speak(text) {
+  if (!$('chk-voice').checked || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP'; u.pitch = 1.4; u.rate = 1.05;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+function speakEn(text) {
+  if (!$('chk-voice').checked || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text.toLowerCase());
+  u.lang = 'en-US'; u.pitch = 1.2; u.rate = 0.95;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+
+function logLine(t) {
+  const div = document.createElement('div');
+  div.textContent = `[${new Date().toTimeString().slice(0, 8)}] ${t}`;
+  $('log').prepend(div);
+  while ($('log').children.length > 40) $('log').lastChild.remove();
+}
+</script>
+</body>
+</html>

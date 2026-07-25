@@ -46,6 +46,7 @@ class ToioDevice {
     this._eventHandlers = {};
     this.position = { x: 250, y: 250, angle: 0 };
     this._posValid = false;   // true once we've received at least one position notification
+    this.standardId = null;   // 現在乗っているカード/ボードの Standard ID
     this.led      = { r: 0, g: 0, b: 0 };
     this.button   = false;
 
@@ -128,10 +129,21 @@ class ToioDevice {
       this._posValid = true;
       this._emit('position', { ...this.position });
     }
-    // type 0x02 = Position ID missed (cube lifted off mat)
+    // type 0x02 = Standard ID (カード・ボード・簡易カードの上)
     if (type === 0x02) {
+      const id = dv.getUint32(1, true);
+      this.standardId = id;
+      this._emit('standardId', { id, angle: dv.getUint16(5, true) });
+    }
+    // type 0x03 = Position ID missed (マットから持ち上げた)
+    if (type === 0x03) {
       this._posValid = false;
       this._emit('matMissed');
+    }
+    // type 0x04 = Standard ID missed (カードから離れた)
+    if (type === 0x04) {
+      this.standardId = null;
+      this._emit('standardIdMissed');
     }
   }
 
