@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ともだちtoio 〜きみと友だちになりたい〜</title>
+<style>
+  :root {
+    --bg: #FDF6EC; --panel: #FFFFFF; --ink: #4A3F35;
+    --accent: #FF6FA5; --accent2: #59C1E8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 12px;
+  }
+  header {
+    width: 100%; max-width: 960px; display: flex; align-items: center;
+    gap: 12px; flex-wrap: wrap; padding: 8px 4px;
+  }
+  h1 { font-size: 22px; letter-spacing: 1px; }
+  h1 .sub { font-size: 12px; color: #9A8C7E; font-weight: normal; margin-left: 8px; }
+  .btn {
+    border: none; border-radius: 999px; padding: 10px 18px; font-size: 14px;
+    font-family: inherit; cursor: pointer; color: #fff; background: var(--accent2);
+    box-shadow: 0 2px 0 rgba(0,0,0,.12); transition: transform .08s;
+  }
+  .btn:active { transform: translateY(2px); box-shadow: none; }
+  .btn.pink { background: var(--accent); }
+  .btn.ghost { background: #C9BBAA; }
+  .btn.connected { background: #34C77B; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  #stage-wrap {
+    margin-top: 8px; background: var(--panel); border-radius: 20px;
+    box-shadow: 0 6px 24px rgba(74,63,53,.10); padding: 10px;
+  }
+  footer { margin-top: 10px; font-size: 12px; color: #9A8C7E; text-align: center; line-height: 1.7; }
+  canvas { display: block; border-radius: 12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>ともだちtoio<span class="sub">きみと友だちになりたい ― テーマ「友」</span></h1>
+    <span style="flex:1"></span>
+    <button id="btn-you"    class="btn">① あなたのキューブを接続</button>
+    <button id="btn-friend" class="btn pink">② ともだちを接続</button>
+    <button id="btn-sim"    class="btn ghost">シミュレーションで遊ぶ</button>
+    <button id="btn-reset"  class="btn ghost">リセット</button>
+  </header>
+  <div id="stage-wrap"></div>
+  <footer>
+    あなたのキューブは<strong>手で動かして</strong>ください。近くにいてあげると、なついてくれます。<br>
+    なでなで＝ともだちのそばで小刻みにゆらす／ともだちのボタンを押す。ほったらかすと…すねちゃうかも。
+  </footer>
+  <script src="p5.min.js"></script>
+  <script src="toio.js"></script>
+  <script src="sketch.js"></script>
+</body>
+</html>

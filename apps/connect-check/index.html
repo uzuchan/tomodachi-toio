@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>toio 接続チェック</title>
+<style>
+  :root { --bg:#FDF6EC; --ink:#4A3F35; --ok:#34C77B; --ng:#DC2626; --accent:#59C1E8; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif; background:var(--bg);
+         color:var(--ink); max-width:760px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:22px; margin-bottom:4px; }
+  .sub { color:#9A8C7E; font-size:13px; margin-bottom:16px; }
+  .sub a { color:#59A1E8; }
+  .card { background:#fff; border-radius:16px; padding:16px 18px; margin-bottom:14px;
+          box-shadow:0 4px 16px rgba(74,63,53,.08); }
+  .card h2 { font-size:15px; margin-bottom:10px; }
+  .diag { display:flex; align-items:center; gap:8px; font-size:14px; padding:4px 0; }
+  .diag .mark { width:22px; text-align:center; font-weight:bold; }
+  .ok { color:var(--ok); } .ng { color:var(--ng); } .warn { color:#D97706; }
+  .btn { border:none; border-radius:999px; padding:12px 22px; font-size:15px; font-family:inherit;
+         cursor:pointer; color:#fff; background:var(--accent); box-shadow:0 2px 0 rgba(0,0,0,.12); }
+  .btn:active { transform:translateY(2px); box-shadow:none; }
+  .btn.big { font-size:17px; padding:14px 30px; background:#FF6FA5; }
+  .btn.mini { padding:8px 14px; font-size:13px; }
+  .btn:disabled { opacity:.45; cursor:default; }
+  #log { background:#2B2620; color:#E8DFD2; border-radius:12px; padding:12px 14px; font-family:Menlo,monospace;
+         font-size:12px; line-height:1.7; max-height:260px; overflow-y:auto; white-space:pre-wrap; }
+  #log .e { color:#FF8A8A; } #log .s { color:#8AE6A1; }
+  table { width:100%; font-size:14px; border-collapse:collapse; }
+  td { padding:6px 4px; border-bottom:1px solid #F2E8D8; }
+  td:first-child { color:#9A8C7E; width:140px; }
+  .val { font-family:Menlo,monospace; font-size:15px; }
+  .hint { background:#FFF6E5; border-left:4px solid #FFC53D; border-radius:8px;
+          padding:10px 14px; font-size:13px; line-height:1.8; margin-top:10px; display:none; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+</style>
+</head>
+<body>
+  <h1>🔌 toio 接続チェック</h1>
+  <p class="sub">実機と接続できるかだけを確認する最小ツール ｜ <a href="../../index.html">← ホームへ</a></p>
+
+  <div class="card">
+    <h2>1. 環境チェック（自動）</h2>
+    <div id="diag"></div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <h2>2. 接続テスト</h2>
+    <p style="font-size:13px; color:#9A8C7E; margin-bottom:12px">
+      toioの電源を入れて（底のボタン長押し→起動音）、ボタンを押してください
+    </p>
+    <button id="btn-connect" class="btn big">toioを接続する</button>
+    <button id="btn-disconnect" class="btn mini" style="display:none">切断</button>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <div class="card" id="cube-card" style="display:none">
+    <h2>3. キューブ情報（接続成功！）</h2>
+    <table>
+      <tr><td>名前</td><td class="val" id="v-name">—</td></tr>
+      <tr><td>バッテリー</td><td class="val" id="v-batt">—</td></tr>
+      <tr><td>位置 (マット上)</td><td class="val" id="v-pos">マットに置いてね</td></tr>
+      <tr><td>ボタン</td><td class="val" id="v-btn">—</td></tr>
+      <tr><td>姿勢</td><td class="val" id="v-att">—</td></tr>
+    </table>
+    <div class="row">
+      <button class="btn mini" onclick="led(255,0,0)">LED赤</button>
+      <button class="btn mini" onclick="led(0,255,0)">LED緑</button>
+      <button class="btn mini" onclick="led(0,0,255)">LED青</button>
+      <button class="btn mini" onclick="ledOff()">LED消灯</button>
+      <button class="btn mini" onclick="sound()">音を鳴らす</button>
+      <button class="btn mini" onclick="wiggle()">くるっと回る</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>ログ</h2>
+    <div id="log"></div>
+  </div>
+
+<script src="toio.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let cube = null;
+
+function log(msg, cls) {
+  const t = new Date().toTimeString().slice(0, 8);
+  const span = document.createElement('span');
+  if (cls) span.className = cls;
+  span.textContent = `[${t}] ${msg}\n`;
+  $('log').appendChild(span);
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+// ── 1. 環境診断 ──────────────────────────────────────────────
+async function runDiag() {
+  const rows = [];
+  const isChromium = !!window.chrome;
+  rows.push([isChromium, `ブラウザ: ${navigator.userAgent.includes('Edg') ? 'Edge' : isChromium ? 'Chrome系' : 'Chrome/Edge以外'}`,
+             'SafariやFirefoxは不可。Google Chrome か Edge で開いてください']);
+  rows.push([window.isSecureContext, `セキュアコンテキスト (${location.protocol}//${location.host || 'file'})`,
+             'file:// では動きません。localhost か https (GitHub Pages) で開いてください']);
+  rows.push([!!navigator.bluetooth, 'Web Bluetooth API',
+             'chrome://flags ではなく通常のChromeで対応済みのはず。ブラウザを最新にしてください']);
+
+  let avail = null;
+  if (navigator.bluetooth?.getAvailability) {
+    try { avail = await navigator.bluetooth.getAvailability(); } catch (e) {}
+    rows.push([avail, 'Bluetoothアダプタ利用可能',
+               'MacのBluetoothがONか、システム設定→プライバシーとセキュリティ→Bluetooth で Chrome が許可されているか確認']);
+  }
+
+  $('diag').innerHTML = '';
+  let allOk = true;
+  for (const [ok, label, fix] of rows) {
+    const div = document.createElement('div');
+    div.className = 'diag';
+    div.innerHTML = `<span class="mark ${ok ? 'ok' : 'ng'}">${ok ? '✓' : '✗'}</span><span>${label}</span>`;
+    $('diag').appendChild(div);
+    if (!ok) {
+      allOk = false;
+      const f = document.createElement('div');
+      f.className = 'diag'; f.style.paddingLeft = '30px'; f.style.color = '#D97706'; f.style.fontSize = '12px';
+      f.textContent = `→ ${fix}`;
+      $('diag').appendChild(f);
+    }
+  }
+  log(allOk ? '環境チェック: すべてOK' : '環境チェック: 問題あり（上の✗を直してください）', allOk ? 's' : 'e');
+  return allOk;
+}
+
+// ── 2. 接続 ──────────────────────────────────────────────────
+const HINTS = {
+  NotFoundError: `ダイアログにtoioが出ない・キャンセルした場合:<br>
+    ・toioの電源が入っているか（起動音が鳴り、ランプ点灯）<br>
+    ・<b>他のタブ / アプリ / スマホが接続中だと一覧に出ません</b>（ビューワーのタブを閉じる、toioアプリを終了、電源を入れ直す）<br>
+    ・Macの システム設定 → プライバシーとセキュリティ → Bluetooth → Chrome を許可`,
+  SecurityError: `このページを localhost か https で開き直してください（file:// は不可）`,
+  NetworkError: `接続が途中で切れました。toioの電源を入れ直して、もう一度試してください`,
+  default: `toioの電源を入れ直して再試行。ダメならChrome再起動 → Mac のBluetoothをOFF/ON`,
+};
+
+$('btn-connect').onclick = async () => {
+  $('hint').style.display = 'none';
+  $('btn-connect').disabled = true;
+  try {
+    log('デバイス選択ダイアログを開きます…');
+    cube = await toioManager.addCube();   // 中で requestDevice → GATT → 全キャラクタリスティック購読
+    log(`接続成功: ${cube.name}`, 's');
+    $('btn-connect').textContent = `✓ ${cube.name} と接続中`;
+    $('btn-disconnect').style.display = 'inline-block';
+    $('cube-card').style.display = 'block';
+    $('v-name').textContent = cube.name;
+
+    const batt = await cube.getBattery();
+    $('v-batt').textContent = `${batt}%${batt < 20 ? ' ⚠ 充電して！' : ''}`;
+    log(`バッテリー: ${batt}%`);
+
+    cube.on('position', p => { $('v-pos').textContent = `x=${p.x}  y=${p.y}  角度=${p.angle}°`; });
+    cube.on('matMissed', () => { $('v-pos').textContent = 'マットの外（持ち上げ中？）'; });
+    cube.on('button', b => { $('v-btn').textContent = b ? '押されてる！' : '離した'; });
+    cube.on('attitude', a => { $('v-att').textContent = `roll=${a.roll} pitch=${a.pitch} yaw=${a.yaw}`; });
+    cube.on('disconnect', () => {
+      log('切断されました', 'e');
+      resetUI();
+    });
+
+    await cube.setLED(0, 255, 120, 0);
+    await cube.playSoundEffect(0);
+    log('LED点灯＆効果音OK。マットに置くと位置が出ます', 's');
+  } catch (e) {
+    log(`エラー: ${e.name} — ${e.message}`, 'e');
+    $('hint').innerHTML = HINTS[e.name] || HINTS.default;
+    $('hint').style.display = 'block';
+    $('btn-connect').disabled = false;
+  }
+  $('btn-connect').disabled = false;
+};
+
+$('btn-disconnect').onclick = () => { if (cube) cube.disconnect(); };
+
+function resetUI() {
+  cube = null;
+  $('btn-connect').textContent = 'toioを接続する';
+  $('btn-connect').disabled = false;
+  $('btn-disconnect').style.display = 'none';
+  $('cube-card').style.display = 'none';
+}
+
+// ── 3. 動作テスト ─────────────────────────────────────────────
+function led(r, g, b) { cube?.setLED(r, g, b, 0).then(() => log(`LED (${r},${g},${b})`)).catch(e => log(e.message, 'e')); }
+function ledOff()     { cube?.turnOffLED().then(() => log('LED消灯')).catch(e => log(e.message, 'e')); }
+function sound()      { cube?.playSoundEffect(6).then(() => log('効果音再生')).catch(e => log(e.message, 'e')); }
+async function wiggle() {
+  if (!cube) return;
+  try { log('モーターテスト…'); await cube.move(50, -50, 600); await cube.move(-50, 50, 600); await cube.stop(); log('モーターOK', 's'); }
+  catch (e) { log(e.message, 'e'); }
+}
+
+runDiag();
+log('準備OK。「toioを接続する」を押してください');
+</script>
+</body>
+</html>

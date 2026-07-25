@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ともだちtoio — 全日本AIハッカソン「友」</title>
+<style>
+  :root { --bg:#FDF6EC; --ink:#4A3F35; --accent:#FF6FA5; --accent2:#59C1E8; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif; background:var(--bg);
+         color:var(--ink); max-width:860px; margin:0 auto; padding:36px 20px 80px; }
+  h1 { font-size:34px; letter-spacing:2px; }
+  .lead { color:#9A8C7E; margin:10px 0 6px; line-height:1.9; }
+  .badge { display:inline-block; background:#FFE3EE; color:#D14D82; border-radius:999px;
+           padding:4px 14px; font-size:12px; margin:12px 0 26px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:18px; }
+  a.app { display:block; background:#fff; border-radius:20px; padding:22px;
+          text-decoration:none; color:inherit; box-shadow:0 6px 20px rgba(74,63,53,.10);
+          transition:transform .12s, box-shadow .12s; border-top:6px solid var(--c, var(--accent2)); }
+  a.app:hover { transform:translateY(-4px); box-shadow:0 12px 28px rgba(74,63,53,.16); }
+  .app .emoji { font-size:38px; }
+  .app h2 { font-size:18px; margin:10px 0 6px; }
+  .app p { font-size:13px; color:#9A8C7E; line-height:1.8; }
+  .app .tag { display:inline-block; font-size:11px; background:#F4EADB; color:#9A8C7E;
+              border-radius:6px; padding:2px 8px; margin-top:10px; margin-right:4px; }
+  .note { margin-top:34px; background:#fff; border-radius:16px; padding:18px 22px;
+          font-size:13px; line-height:2; color:#7A6D5F; box-shadow:0 4px 16px rgba(74,63,53,.07); }
+  .note b { color:var(--ink); }
+</style>
+</head>
+<body>
+  <h1>ともだちtoio</h1>
+  <p class="lead">
+    手のひらのロボット toio と<b>友だちになる</b>ゲームたち。<br>
+    そばにいると、なつく。ほうっておくと、すねる。— テーマ「友」
+  </p>
+  <span class="badge">全日本AIハッカソン 2026 ｜ Sony toio × p5.js × Web Bluetooth</span>
+
+  <div class="grid">
+    <a class="app" href="apps/connect-check/" style="--c:#59C1E8">
+      <div class="emoji">🔌</div>
+      <h2>toio 接続チェック</h2>
+      <p>まずはここから。環境診断つきで、実機とつながるかだけを確認する最小ツール。LED・音・モーターの動作テストもできます。</p>
+      <span class="tag">実機</span><span class="tag">はじめに</span>
+    </a>
+
+    <a class="app" href="apps/tomodachi-toio/" style="--c:#FF6FA5">
+      <div class="emoji">🤝</div>
+      <h2>ともだちtoio</h2>
+      <p>手で動かすあなたのキューブに、AIの"友"キューブが心を開いていく。なでなでで喜び、放置ですねて、仲直りで踊る。実機がなくてもシミュレーションで遊べます。</p>
+      <span class="tag">メイン作品</span><span class="tag">実機2台 or シム</span>
+    </a>
+  </div>
+
+  <div class="note">
+    <b>あそぶには:</b> Google Chrome / Edge で開いてください（Web Bluetooth 対応ブラウザ）。Safari・スマホSafariは不可。<br>
+    <b>実機接続:</b> toio の電源を入れて「接続」ボタン →ダイアログで電波の強いキューブを選択。
+    一覧に出ないときは、他のタブやアプリが接続中でないか確認して電源を入れ直してください。<br>
+    <b>マット:</b> A3 簡易プレイマット（開発用）対応。
+  </div>
+</body>
+</html>
