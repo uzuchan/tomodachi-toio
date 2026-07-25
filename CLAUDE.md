@@ -10,7 +10,8 @@ index.html              … ホームページ（アプリランチャー）
 apps/
   connect-check/        … 実機との接続確認だけをする最小ツール（トラブルシュート用）
   tomodachi-toio/       … メイン作品。AIの"友"キューブが手動キューブになついていくゲーム
-  toio-concert/         … 1台用。MIDI一括送信で演奏(アイネクライネ等)+拍同期ダンス/LED。マット不要
+  toio-concert/         … 1〜2台用。MIDI一括送信で演奏(アイネクライネ、あつ森テーマ等)+拍同期ダンス/LED。
+                          マット不要。2台デュエットはセクション毎にPromise.allで同時書込→境界で再同期
   moji-board/           … 1台用。簡易カード(数字/A-Z/記号)のStandard IDを読んで表示+読み上げ
     index.html          … UI（接続ボタン等はHTML側）
     sketch.js           … 感情エンジン + デジタルツイン描画 (p5.js)
